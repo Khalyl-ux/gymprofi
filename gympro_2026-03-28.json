@@ -1,0 +1,114 @@
+{
+  "versao": "5.0",
+  "exportado": "2026-03-28T17:41:46.296Z",
+  "alunos": [
+    {
+      "id": "mnam4b1m8sfui",
+      "nome": "Ana Paula Souza",
+      "idade": 28,
+      "altura": 165,
+      "peso": 58,
+      "plano": "Anual",
+      "status": "Ativo",
+      "telefone": "(11) 99999-1234",
+      "dataCadastro": 1773855418090,
+      "faceDescriptor": null,
+      "avaliacoes": [
+        {
+          "id": 1,
+          "data": 1772127418090,
+          "peso": 61,
+          "obs": "Início"
+        },
+        {
+          "id": 2,
+          "data": 1773423418090,
+          "peso": 59,
+          "obs": "Boa evolução"
+        },
+        {
+          "id": 3,
+          "data": 1774719418090,
+          "peso": 58,
+          "obs": "Mantendo"
+        }
+      ],
+      "imc": 21.3
+    },
+    {
+      "id": "mnam4b1mg2e74",
+      "nome": "Bruno Lima",
+      "idade": 34,
+      "altura": 175,
+      "peso": 85,
+      "plano": "Mensal",
+      "status": "Inadimplente",
+      "telefone": "(11) 98888-5678",
+      "dataCadastro": 1772991418090,
+      "faceDescriptor": null,
+      "avaliacoes": [
+        {
+          "id": 1,
+          "data": 1772991418090,
+          "peso": 90,
+          "obs": "Início"
+        },
+        {
+          "id": 2,
+          "data": 1774719418090,
+          "peso": 85,
+          "obs": "Perda de peso"
+        }
+      ],
+      "imc": 27.8
+    },
+    {
+      "id": "mnam4b1mr76ct",
+      "nome": "Camila Rocha",
+      "idade": 22,
+      "altura": 160,
+      "peso": 52,
+      "plano": "Mensal",
+      "status": "Ativo",
+      "telefone": "(11) 97777-9012",
+      "dataCadastro": 1774287418090,
+      "faceDescriptor": null,
+      "avaliacoes": [
+        {
+          "id": 1,
+          "data": 1774719418090,
+          "peso": 52,
+          "obs": "Cadastro"
+        }
+      ],
+      "imc": 20.3
+    },
+    {
+      "id": "mnam4b1ma1cae",
+      "nome": "Diego Ferreira",
+      "idade": 41,
+      "altura": 180,
+      "peso": 100,
+      "plano": "Anual",
+      "status": "Ativo",
+      "telefone": "(11) 96666-3456",
+      "dataCadastro": 1769535418090,
+      "faceDescriptor": null,
+      "avaliacoes": [
+        {
+          "id": 1,
+          "data": 1769535418090,
+          "peso": 110,
+          "obs": "Início"
+        },
+        {
+          "id": 2,
+          "data": 1774719418090,
+          "peso": 100,
+          "obs": "Bom progresso"
+        }
+      ],
+      "imc": 30.9
+    }
+  ]
+}

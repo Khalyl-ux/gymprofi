@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GymPro 5.0 — Sistema de Gestão</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #080B10;
+  --surface-1: #0D1118;
+  --surface-2: #131820;
+  --surface-3: #1A2030;
+  --border:    rgba(255,255,255,0.06);
+  --border-hi: rgba(255,255,255,0.12);
+  --lime:      #C8FF57;
+  --lime-dim:  #8FBF30;
+  --lime-glow: rgba(200,255,87,0.18);
+  --cyan:      #57E5FF;
+  --rose:      #FF4D6D;
+  --amber:     #FFB238;
+  --violet:    #9D6CFF;
+  --text-1:    #F0F4FF;
+  --text-2:    #8896AB;
+  --text-3:    #4E5A6E;
+  --radius:    14px;
+  --radius-lg: 20px;
+  --sidebar-w: 240px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* ─── NOISE OVERLAY ─── */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--surface-1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left:0; top:0; bottom:0;
+  z-index: 50;
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 36px; height: 36px;
+  background: var(--lime);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.logo-icon svg { width:18px; height:18px; color: #000; }
+
+.logo-text {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+}
+
+.logo-text span { color: var(--lime); }
+
+.sidebar-version {
+  font-size: 0.65rem;
+  color: var(--text-3);
+  margin-top: 2px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar-nav {
+  flex:1;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-section-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 12px 8px 6px;
+  font-weight: 600;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all .2s;
+  border: none; background: none; width:100%; text-align: left;
+}
+
+.nav-item:hover { background: var(--surface-3); color: var(--text-1); }
+
+.nav-item.active {
+  background: var(--lime-glow);
+  color: var(--lime);
+  font-weight: 600;
+}
+
+.nav-item .nav-icon { width:16px; height:16px; flex-shrink:0; }
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--lime);
+  color: #000;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+}
+
+.sidebar-footer {
+  padding: 16px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-stat {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 0.75rem;
+}
+
+.sidebar-stat-label { color: var(--text-3); margin-bottom: 4px; }
+.sidebar-stat-value { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--lime); }
+
+/* ─── MAIN ─── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex:1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  height: 60px;
+  background: rgba(8,11,16,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 16px;
+  position: sticky;
+  top:0; z-index:40;
+}
+
+.topbar-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  flex:1;
+}
+
+.topbar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 12px;
+  width: 260px;
+  transition: border-color .2s;
+}
+
+.topbar-search:focus-within { border-color: var(--lime-dim); }
+.topbar-search svg { width:14px; height:14px; color: var(--text-3); flex-shrink:0; }
+.topbar-search input { background:none; border:none; outline:none; color: var(--text-1); font-size: 0.8rem; width:100%; }
+.topbar-search input::placeholder { color: var(--text-3); }
+
+.topbar-btn {
+  width:34px; height:34px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-2);
+  transition: all .2s;
+  flex-shrink:0;
+}
+
+.topbar-btn:hover { border-color: var(--lime); color: var(--lime); }
+.topbar-btn svg { width:16px; height:16px; }
+
+/* ─── CONTENT ─── */
+.content {
+  padding: 28px;
+  flex:1;
+}
+
+.page { display:none; animation: pageIn .3s ease; }
+.page.active { display:block; }
+
+@keyframes pageIn {
+  from { opacity:0; transform: translateY(8px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ─── PAGE HEADER ─── */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.page-header-text h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.page-header-text p {
+  color: var(--text-2);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* ─── KPI GRID ─── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.kpi-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+
+.kpi-card:hover { border-color: var(--border-hi); }
+
+.kpi-card::after {
+  content:'';
+  position: absolute;
+  top:-30px; right:-30px;
+  width:80px; height:80px;
+  border-radius:50%;
+  background: var(--accent, var(--lime));
+  opacity: 0.06;
+  filter: blur(20px);
+}
+
+.kpi-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.kpi-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-1);
+  line-height: 1;
+}
+
+.kpi-sub {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-top: 6px;
+}
+
+.kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-top: 8px;
+}
+
+.kpi-trend.up { background: rgba(200,255,87,.12); color: var(--lime); }
+.kpi-trend.down { background: rgba(255,77,109,.12); color: var(--rose); }
+.kpi-trend.neutral { background: rgba(255,178,56,.12); color: var(--amber); }
+
+.kpi-icon {
+  position: absolute;
+  top:18px; right:18px;
+  width:32px; height:32px;
+  background: var(--surface-3);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent, var(--lime));
+}
+
+.kpi-icon svg { width:15px; height:15px; }
+
+/* ─── GRID LAYOUT ─── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+
+/* ─── CARD ─── */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.card-action {
+  font-size: 0.75rem;
+  color: var(--lime);
+  cursor: pointer;
+  font-weight: 500;
+  background: none; border:none;
+  padding:0;
+}
+
+/* ─── STUDENT CARDS ─── */
+.students-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.student-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  cursor: pointer;
+  transition: all .25s cubic-bezier(.4,0,.2,1);
+  position: relative;
+  overflow: hidden;
+}
+
+.student-card:hover {
+  border-color: var(--border-hi);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+
+.student-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.avatar {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink:0;
+}
+
+.student-info { flex:1; min-width:0; }
+
+.student-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.student-meta {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.student-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+.badge-active   { background: rgba(200,255,87,.12); color: var(--lime); }
+.badge-inactive { background: rgba(255,77,109,.12); color: var(--rose); }
+
+.student-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.student-stat {
+  background: var(--surface-2);
+  border-radius: 9px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.student-stat-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.student-stat-label {
+  font-size: 0.6rem;
+  color: var(--text-3);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.iml-bar {
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.iml-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .5s ease;
+}
+
+.student-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: all .2s;
+}
+
+.btn svg { width:14px; height:14px; flex-shrink:0; }
+
+.btn-primary {
+  background: var(--lime);
+  color: #000;
+}
+
+.btn-primary:hover {
+  background: #d8ff78;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--lime-glow);
+}
+
+.btn-ghost {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+
+.btn-ghost:hover { border-color: var(--border-hi); color: var(--text-1); background: var(--surface-3); }
+
+.btn-danger-ghost {
+  background: rgba(255,77,109,.08);
+  border: 1px solid rgba(255,77,109,.2);
+  color: var(--rose);
+}
+
+.btn-danger-ghost:hover { background: rgba(255,77,109,.15); }
+
+.btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+.btn-icon { padding: 7px; }
+
+/* ─── FORM ─── */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.form-field { display:flex; flex-direction:column; gap:6px; }
+
+.form-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.form-input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text-1);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  width:100%;
+}
+
+.form-input:focus {
+  border-color: var(--lime-dim);
+  box-shadow: 0 0 0 3px rgba(200,255,87,0.08);
+}
+
+.form-input::placeholder { color: var(--text-3); }
+
+textarea.form-input { resize: vertical; min-height:80px; }
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* ─── IMC BADGE ─── */
+.imc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* ─── FILTER BAR ─── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 6px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-2);
+  transition: all .2s;
+  white-space: nowrap;
+}
+
+.filter-chip:hover { border-color: var(--border-hi); color: var(--text-1); }
+.filter-chip.active { background: var(--lime-glow); border-color: var(--lime-dim); color: var(--lime); }
+
+/* ─── BMI SCALE ─── */
+.bmi-scale {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 12px 0;
+  gap: 2px;
+}
+
+.bmi-scale-seg { flex:1; border-radius: 2px; }
+
+.bmi-indicator {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.bmi-cat {
+  text-align: center;
+  font-size: 0.6rem;
+  padding: 6px 4px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all .2s;
+}
+
+.bmi-cat.current { transform: scale(1.06); }
+
+/* ─── HISTORY TABLE ─── */
+.history-table { width:100%; border-collapse:collapse; }
+
+.history-table th {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  font-weight: 600;
+  padding: 8px 12px;
+  text-align:left;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-table td {
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.history-table tr:last-child td { border-bottom:none; }
+.history-table tr:hover td { background: var(--surface-2); }
+
+/* ─── PAGINATION ─── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 24px;
+}
+
+.page-btn {
+  width: 32px; height: 32px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-2);
+  transition: all .2s;
+}
+
+.page-btn:hover, .page-btn.active {
+  background: var(--lime-glow);
+  border-color: var(--lime-dim);
+  color: var(--lime);
+}
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-overlay.open { display:flex; }
+
+.modal-box {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y:auto;
+  animation: modalIn .25s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes modalIn {
+  from { opacity:0; transform: scale(.95) translateY(10px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.modal-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.modal-close {
+  width:30px; height:30px;
+  background: var(--surface-3);
+  border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; border:none; color: var(--text-2);
+  transition: all .2s;
+}
+
+.modal-close:hover { background: rgba(255,77,109,.15); color: var(--rose); }
+.modal-close svg { width:14px; height:14px; }
+
+/* ─── TOAST ─── */
+#toastContainer {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index:500;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.toast {
+  background: var(--surface-2);
+  border: 1px solid var(--border-hi);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  min-width: 260px;
+  animation: toastIn .25s ease, toastOut .3s ease 2.7s forwards;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+
+.toast.success { border-left: 3px solid var(--lime); }
+.toast.error   { border-left: 3px solid var(--rose); }
+.toast.info    { border-left: 3px solid var(--cyan); }
+
+.toast-icon { width:18px; height:18px; flex-shrink:0; }
+.toast.success .toast-icon { color: var(--lime); }
+.toast.error   .toast-icon { color: var(--rose); }
+.toast.info    .toast-icon { color: var(--cyan); }
+
+@keyframes toastIn  { from { transform:translateX(30px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+@keyframes toastOut { to   { transform:translateX(30px); opacity:0; } }
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--text-3);
+}
+
+.empty-state svg { width:48px; height:48px; margin:0 auto 16px; opacity:.3; }
+.empty-state h3 { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:var(--text-2); margin-bottom:6px; }
+.empty-state p  { font-size:0.8rem; }
+
+/* ─── PROGRESS RING ─── */
+.ring-wrap { display:flex; align-items:center; justify-content:center; }
+
+/* ─── DIVIDER ─── */
+.divider { height:1px; background: var(--border); margin:20px 0; }
+
+/* ─── CHART ─── */
+.chart-wrap { position:relative; height:240px; }
+
+/* ─── FACIAL ─── */
+.camera-wrap {
+  position:relative;
+  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  overflow:hidden;
+  aspect-ratio: 4/3;
+}
+
+.camera-wrap video { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+.camera-wrap canvas { position:absolute; inset:0; width:100%; height:100%; }
+
+.face-status {
+  display:flex; align-items:center; gap:8px;
+  background: var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:0.8rem;
+  margin-top:12px;
+}
+
+.face-dot {
+  width:8px; height:8px; border-radius:50%;
+  background: var(--text-3);
+  flex-shrink:0;
+  transition: background .3s;
+}
+
+.face-dot.detected { background: var(--lime); box-shadow:0 0 8px var(--lime); }
+.face-dot.error    { background: var(--rose); }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius:3px; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width:1200px) { .kpi-grid { grid-template-columns: repeat(2,1fr); } }
+
+@media (max-width:900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left:0; }
+  .grid-2 { grid-template-columns:1fr; }
+}
+
+@media (max-width:640px) {
+  .kpi-grid { grid-template-columns:1fr 1fr; }
+  .content { padding:16px; }
+}
+
+/* ─── SPARKLINE ─── */
+.sparkline {
+  display:flex; align-items:flex-end; gap:2px; height:24px; margin-top:8px;
+}
+
+.spark-bar { flex:1; background:var(--lime-glow); border-radius:2px; transition:height .3s; }
+.spark-bar:last-child { background:var(--lime); }
+
+/* Selected student for facial */
+.facial-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.facial-chip {
+  padding: 5px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all .2s;
+  color: var(--text-2);
+}
+
+.facial-chip:hover { border-color: var(--lime-dim); color: var(--lime); }
+.facial-chip.selected { background: var(--lime-glow); border-color: var(--lime-dim); color: var(--lime); font-weight:600; }
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M6 4v16M18 4v16M4 12h4M16 12h4M8 8h8M8 16h8"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text">GYM<span>PRO</span></div>
+        <div class="sidebar-version">v5.0 — Pro Edition</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <span class="nav-section-label">Principal</span>
+
+    <button class="nav-item active" onclick="navigate('dashboard')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      Dashboard
+      <span class="nav-badge" id="navBadgeAlunos">0</span>
+    </button>
+
+    <button class="nav-item" onclick="navigate('alunos')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      Alunos
+    </button>
+
+    <button class="nav-item" onclick="navigate('cadastro')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+      </svg>
+      Novo Aluno
+    </button>
+
+    <span class="nav-section-label">Avaliação</span>
+
+    <button class="nav-item" onclick="navigate('imc')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      IMC &amp; Evolução
+    </button>
+
+    <button class="nav-item" onclick="navigate('facial')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/>
+        <line x1="15" y1="9" x2="15.01" y2="9"/>
+      </svg>
+      Facial
+    </button>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-stat">
+      <div class="sidebar-stat-label">IMC Médio da Academia</div>
+      <div class="sidebar-stat-value" id="sidebarImc">—</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="topbar-btn" onclick="toggleSidebar()" style="display:none" id="menuToggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
+    <span class="topbar-title" id="topbarTitle">Dashboard</span>
+
+    <div class="topbar-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input id="globalSearch" type="text" placeholder="Buscar aluno..." oninput="onGlobalSearch()">
+    </div>
+
+    <button class="topbar-btn" onclick="exportarDados()" title="Exportar dados">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ PAGE: DASHBOARD ══ -->
+    <div id="pageDashboard" class="page active">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Dashboard</h1>
+          <p>Visão geral da academia em tempo real</p>
+        </div>
+        <button class="btn btn-primary" onclick="navigate('cadastro')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Novo Aluno
+        </button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent:var(--lime)">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="kpi-label">Total de Alunos</div>
+          <div class="kpi-value" id="kpiTotal">0</div>
+          <div class="kpi-sub">Cadastrados na academia</div>
+        </div>
+
+        <div class="kpi-card" style="--accent:var(--cyan)">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <div class="kpi-label">IMC Médio</div>
+          <div class="kpi-value" id="kpiImc">—</div>
+          <div class="kpi-sub" id="kpiImcClass">Classificação média</div>
+        </div>
+
+        <div class="kpi-card" style="--accent:var(--lime)">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              <polyline points="17 6 23 6 23 12"/>
+            </svg>
+          </div>
+          <div class="kpi-label">Ativos</div>
+          <div class="kpi-value" id="kpiAtivos">0</div>
+          <div class="kpi-sub" id="kpiAtivosPct">— % do total</div>
+        </div>
+
+        <div class="kpi-card" style="--accent:var(--violet)">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+              <line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+            </svg>
+          </div>
+          <div class="kpi-label">Rosto Cadastrado</div>
+          <div class="kpi-value" id="kpiFacial">0</div>
+          <div class="kpi-sub">Reconhecimento facial</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="grid-2" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Distribuição IMC</span>
+            <button class="card-action" onclick="navigate('alunos')">Ver alunos →</button>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartImc"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Status de Pagamento</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chartStatus"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent students -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Alunos Recentes</span>
+          <button class="card-action" onclick="navigate('alunos')">Ver todos →</button>
+        </div>
+        <div id="recentStudents"></div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: ALUNOS ══ -->
+    <div id="pageAlunos" class="page">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Alunos</h1>
+          <p id="alunoCount">0 cadastrados</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost btn-sm" onclick="exportarDados()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Exportar
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="navigate('cadastro')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Novo
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-chip active" onclick="setFilter('plano','')">Todos</div>
+        <div class="filter-chip" onclick="setFilter('plano','Mensal')">Mensal</div>
+        <div class="filter-chip" onclick="setFilter('plano','Anual')">Anual</div>
+        <div class="filter-chip" onclick="setFilter('status','Ativo')">Ativos</div>
+        <div class="filter-chip" onclick="setFilter('status','Inadimplente')">Inadimplentes</div>
+        <div class="filter-chip" onclick="setFilter('imc','normal')">IMC Normal</div>
+        <div class="filter-chip" onclick="setFilter('imc','sobrepeso')">Sobrepeso</div>
+        <div class="filter-chip" onclick="setFilter('imc','obesidade')">Obesidade</div>
+      </div>
+
+      <div id="studentsGrid" class="students-grid"></div>
+      <div id="studentsPagination" class="pagination"></div>
+    </div>
+
+    <!-- ══ PAGE: CADASTRO ══ -->
+    <div id="pageCadastro" class="page">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Novo Aluno</h1>
+          <p>Preencha os dados para cadastrar</p>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:760px">
+        <div class="card-header">
+          <span class="card-title">Dados Pessoais</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-field" style="grid-column:span 2">
+            <label class="form-label">Nome Completo *</label>
+            <input class="form-input" id="inNome" type="text" placeholder="Ex: João da Silva">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Idade *</label>
+            <input class="form-input" id="inIdade" type="number" placeholder="25" min="10" max="120">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Telefone</label>
+            <input class="form-input" id="inTelefone" type="tel" placeholder="(11) 99999-9999">
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="card-header" style="margin-bottom:20px">
+          <span class="card-title">Dados Físicos</span>
+          <div id="imcPreview" style="font-size:.75rem;color:var(--text-3)">Preencha altura e peso</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label">Altura (cm) *</label>
+            <input class="form-input" id="inAltura" type="number" placeholder="170" min="100" max="250" oninput="previewImc()">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Peso (kg) *</label>
+            <input class="form-input" id="inPeso" type="number" placeholder="70" min="20" max="300" step="0.1" oninput="previewImc()">
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="card-header" style="margin-bottom:20px">
+          <span class="card-title">Plano</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label">Modalidade</label>
+            <select class="form-input" id="inPlano">
+              <option value="Mensal">Mensal</option>
+              <option value="Anual">Anual</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Status</label>
+            <select class="form-input" id="inStatus">
+              <option value="Ativo">Ativo</option>
+              <option value="Inadimplente">Inadimplente</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <button class="btn btn-primary" onclick="cadastrarAluno()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Cadastrar Aluno
+          </button>
+          <button class="btn btn-ghost" onclick="limparCadastro()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: IMC ══ -->
+    <div id="pageImc" class="page">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>IMC &amp; Evolução</h1>
+          <p>Avaliação física e histórico de peso</p>
+        </div>
+      </div>
+
+      <div class="form-grid" style="max-width:400px;margin-bottom:24px">
+        <div class="form-field">
+          <label class="form-label">Selecionar Aluno</label>
+          <select class="form-input" id="selectImcAluno" onchange="loadImcData()">
+            <option value="">— escolha um aluno —</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="imcContent" style="display:none">
+        <!-- IMC Panel -->
+        <div class="grid-2" style="margin-bottom:20px">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Índice de Massa Corporal</span>
+              <button class="btn btn-primary btn-sm" onclick="openAvaliacaoModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px;height:12px">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Avaliar
+              </button>
+            </div>
+
+            <div style="text-align:center;padding:16px 0">
+              <div style="font-family:'Syne',sans-serif;font-size:3.5rem;font-weight:800;letter-spacing:-.05em;line-height:1" id="imcBigVal">—</div>
+              <div style="color:var(--text-3);font-size:.75rem;margin-top:4px">kg/m²</div>
+              <div id="imcBadge" style="margin-top:12px"></div>
+            </div>
+
+            <div class="bmi-scale" id="imcScale">
+              <div class="bmi-scale-seg" style="background:#3b82f6"></div>
+              <div class="bmi-scale-seg" style="background:#22c55e"></div>
+              <div class="bmi-scale-seg" style="background:#facc15"></div>
+              <div class="bmi-scale-seg" style="background:#f97316"></div>
+              <div class="bmi-scale-seg" style="background:#ef4444"></div>
+              <div class="bmi-scale-seg" style="background:#991b1b"></div>
+            </div>
+
+            <div class="bmi-indicator" id="imcCategories"></div>
+
+            <div class="divider"></div>
+
+            <div id="imcFormula" style="font-size:.75rem;color:var(--text-3);line-height:1.6"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Evolução de Peso</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chartEvolucao"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- History -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Histórico de Avaliações</span>
+            </div>
+            <table class="history-table" id="historyTable">
+              <thead>
+                <tr>
+                  <th>Data</th><th>Peso</th><th>IMC</th><th>Classificação</th>
+                </tr>
+              </thead>
+              <tbody id="historyBody"></tbody>
+            </table>
+          </div>
+
+          <!-- Recommendations -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Recomendações</span>
+            </div>
+            <div id="imcRecomendacoes" style="display:flex;flex-direction:column;gap:10px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="imcEmpty" class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <h3>Selecione um aluno</h3>
+        <p>Escolha um aluno acima para ver o IMC e evolução</p>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: FACIAL ══ -->
+    <div id="pageFacial" class="page">
+      <div class="page-header">
+        <div class="page-header-text">
+          <h1>Reconhecimento Facial</h1>
+          <p>Registre e identifique alunos por biometria</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="camera-wrap">
+            <video id="videoEl" autoplay muted playsinline></video>
+            <canvas id="overlayEl"></canvas>
+          </div>
+          <div class="face-status">
+            <div class="face-dot" id="faceDot"></div>
+            <span id="faceStatusText">Inicializando câmera...</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn btn-primary" id="btnRegistrar" onclick="registrarRosto()" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              Registrar
+            </button>
+            <button class="btn btn-ghost" onclick="buscarRosto()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              Identificar
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Vincular a Aluno</span>
+          </div>
+          <p style="font-size:.78rem;color:var(--text-3);margin-bottom:12px">Selecione o aluno e clique em Registrar com o rosto na câmera:</p>
+          <div class="facial-select" id="facialSelect"></div>
+
+          <div class="divider"></div>
+
+          <div class="card-header">
+            <span class="card-title">Como usar</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:22px;height:22px;border-radius:6px;background:var(--lime-glow);border:1px solid var(--lime-dim);color:var(--lime);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">1</div>
+              <div>
+                <div style="font-size:.78rem;font-weight:600">Selecione o aluno na lista acima</div>
+                <div style="font-size:.72rem;color:var(--text-3)">Toque no nome para selecioná-lo</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:22px;height:22px;border-radius:6px;background:var(--lime-glow);border:1px solid var(--lime-dim);color:var(--lime);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">2</div>
+              <div>
+                <div style="font-size:.78rem;font-weight:600">Posicione o rosto na câmera</div>
+                <div style="font-size:.72rem;color:var(--text-3)">Aguarde o ponto verde aparecer</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <div style="width:22px;height:22px;border-radius:6px;background:var(--lime-glow);border:1px solid var(--lime-dim);color:var(--lime);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">3</div>
+              <div>
+                <div style="font-size:.78rem;font-weight:600">Clique em "Registrar"</div>
+                <div style="font-size:.72rem;color:var(--text-3)">O rosto será vinculado ao aluno</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- ═══ MODAL: EDITAR ═══ -->
+<div class="modal-overlay" id="modalEdit">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Editar Aluno</span>
+      <button class="modal-close" onclick="closeModal('modalEdit')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <input type="hidden" id="editId">
+    <div class="form-grid">
+      <div class="form-field" style="grid-column:span 2">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="editNome" type="text">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Idade</label>
+        <input class="form-input" id="editIdade" type="number">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Telefone</label>
+        <input class="form-input" id="editTel" type="tel">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Altura (cm)</label>
+        <input class="form-input" id="editAltura" type="number">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Peso (kg)</label>
+        <input class="form-input" id="editPeso" type="number" step="0.1">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Plano</label>
+        <select class="form-input" id="editPlano">
+          <option>Mensal</option><option>Anual</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Status</label>
+        <select class="form-input" id="editStatus">
+          <option>Ativo</option><option>Inadimplente</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-primary" onclick="salvarEdicao()">Salvar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalEdit')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: AVALIAÇÃO ═══ -->
+<div class="modal-overlay" id="modalAvaliacao">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">Nova Avaliação</span>
+      <button class="modal-close" onclick="closeModal('modalAvaliacao')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="form-field" style="margin-bottom:16px">
+      <label class="form-label">Peso Atual (kg)</label>
+      <input class="form-input" id="avalPeso" type="number" step="0.1" placeholder="70.5">
+    </div>
+    <div class="form-field" style="margin-bottom:20px">
+      <label class="form-label">Observações</label>
+      <textarea class="form-input" id="avalObs" placeholder="Observações da avaliação..."></textarea>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-primary" onclick="salvarAvaliacao()">Registrar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalAvaliacao')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: CONFIRM DELETE ═══ -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">Confirmar Exclusão</span>
+      <button class="modal-close" onclick="closeModal('modalConfirm')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-2);margin-bottom:20px" id="confirmMsg">Tem certeza?</p>
+    <div class="form-row">
+      <button class="btn btn-danger-ghost" id="confirmYes">Excluir</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalConfirm')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div id="toastContainer"></div>
+
+<!-- ═══ FACE API (lazy) ═══ -->
+<script>
+// ────────── DATA ──────────
+let alunos = [];
+let editChartEvolucao = null;
+let chartImcDist = null;
+let chartStatusDist = null;
+let currentFaceDescriptor = null;
+let selectedFacialId = null;
+let modelsLoaded = false;
+let faceInterval = null;
+
+const IMC_CATS = [
+  { max:18.5, nome:'Magreza',       cor:'#3b82f6', classe:'imc-mag'  },
+  { max:25,   nome:'Normal',        cor:'#22c55e', classe:'imc-nor'  },
+  { max:30,   nome:'Sobrepeso',     cor:'#facc15', classe:'imc-sob'  },
+  { max:35,   nome:'Obesidade I',   cor:'#f97316', classe:'imc-ob1'  },
+  { max:40,   nome:'Obesidade II',  cor:'#ef4444', classe:'imc-ob2'  },
+  { max:999,  nome:'Obesidade III', cor:'#991b1b', classe:'imc-ob3'  },
+];
+
+function calcImc(h, w) {
+  if (!h || !w) return null;
+  return parseFloat((w / ((h/100)**2)).toFixed(1));
+}
+
+function classImc(imc) {
+  if (!imc) return IMC_CATS[0];
+  return IMC_CATS.find(c => imc < c.max) || IMC_CATS.at(-1);
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+
+function avatarColor(name) {
+  const colors = ['#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899'];
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffffff;
+  return colors[Math.abs(h) % colors.length];
+}
+
+function initials(name) {
+  return name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();
+}
+
+// ────────── STORAGE ──────────
+function save() {
+  localStorage.setItem('gympro5', JSON.stringify(alunos));
+}
+
+function load() {
+  try {
+    const d = localStorage.getItem('gympro5');
+    if (d) { alunos = JSON.parse(d); return; }
+  } catch(e){}
+  alunos = [
+    { id:genId(), nome:'Ana Paula Souza', idade:28, altura:165, peso:58, plano:'Anual',  status:'Ativo',        telefone:'(11) 99999-1234', dataCadastro: Date.now() - 86400000*10, faceDescriptor:null,
+      avaliacoes:[ {id:1,data:Date.now()-86400000*30,peso:61,obs:'Início'},{id:2,data:Date.now()-86400000*15,peso:59,obs:'Boa evolução'},{id:3,data:Date.now(),peso:58,obs:'Mantendo'} ] },
+    { id:genId(), nome:'Bruno Lima',       idade:34, altura:175, peso:85, plano:'Mensal', status:'Inadimplente', telefone:'(11) 98888-5678', dataCadastro: Date.now() - 86400000*20, faceDescriptor:null,
+      avaliacoes:[ {id:1,data:Date.now()-86400000*20,peso:90,obs:'Início'},{id:2,data:Date.now(),peso:85,obs:'Perda de peso'} ] },
+    { id:genId(), nome:'Camila Rocha',     idade:22, altura:160, peso:52, plano:'Mensal', status:'Ativo',        telefone:'(11) 97777-9012', dataCadastro: Date.now() - 86400000*5,  faceDescriptor:null,
+      avaliacoes:[ {id:1,data:Date.now(),peso:52,obs:'Cadastro'} ] },
+    { id:genId(), nome:'Diego Ferreira',   idade:41, altura:180, peso:100,plano:'Anual',  status:'Ativo',        telefone:'(11) 96666-3456', dataCadastro: Date.now() - 86400000*60, faceDescriptor:null,
+      avaliacoes:[ {id:1,data:Date.now()-86400000*60,peso:110,obs:'Início'},{id:2,data:Date.now(),peso:100,obs:'Bom progresso'} ] },
+  ];
+  alunos.forEach(a => { a.imc = calcImc(a.altura,a.peso); });
+  save();
+}
+
+// ────────── NAVIGATION ──────────
+const pageMap = {
+  dashboard: { page:'pageDashboard', title:'Dashboard',     navClass:'nav-item' },
+  alunos:    { page:'pageAlunos',    title:'Alunos',        navClass:'nav-item' },
+  cadastro:  { page:'pageCadastro',  title:'Novo Aluno',    navClass:'nav-item' },
+  imc:       { page:'pageImc',       title:'IMC & Evolução',navClass:'nav-item' },
+  facial:    { page:'pageFacial',    title:'Facial',        navClass:'nav-item' },
+};
+
+let currentPage = 'dashboard';
+
+function navigate(key) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+
+  const conf = pageMap[key];
+  document.getElementById(conf.page).classList.add('active');
+  document.querySelectorAll('.nav-item')[['dashboard','alunos','cadastro','imc','facial'].indexOf(key)]?.classList.add('active');
+  document.getElementById('topbarTitle').textContent = conf.title;
+  currentPage = key;
+
+  if (key === 'dashboard')  refreshDashboard();
+  if (key === 'alunos')     renderAlunos();
+  if (key === 'imc')        refreshImcSelect();
+  if (key === 'facial')     { loadFaceModels(); renderFacialSelect(); }
+
+  // mobile close
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ────────── TOAST ──────────
+function toast(msg, type='success') {
+  const icons = {
+    success: `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`,
+    error:   `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    info:    `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+  };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = icons[type] + `<span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
+
+// ────────── MODALS ──────────
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function confirm2(msg, cb) {
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmYes').onclick = ()=>{ closeModal('modalConfirm'); cb(); };
+  document.getElementById('modalConfirm').classList.add('open');
+}
+
+// ────────── DASHBOARD ──────────
+function refreshDashboard() {
+  const total = alunos.length;
+  const ativos = alunos.filter(a=>a.status==='Ativo').length;
+  const comRosto = alunos.filter(a=>a.faceDescriptor).length;
+  const imcs = alunos.map(a=>calcImc(a.altura,a.peso)).filter(Boolean);
+  const imcMedio = imcs.length ? (imcs.reduce((s,v)=>s+v,0)/imcs.length).toFixed(1) : '—';
+
+  document.getElementById('kpiTotal').textContent = total;
+  document.getElementById('kpiImc').textContent = imcMedio;
+  document.getElementById('kpiImcClass').textContent = imcMedio !== '—' ? classImc(parseFloat(imcMedio)).nome : 'Sem dados';
+  document.getElementById('kpiAtivos').textContent = ativos;
+  document.getElementById('kpiAtivosPct').textContent = total ? `${((ativos/total)*100).toFixed(0)}% do total` : '—';
+  document.getElementById('kpiFacial').textContent = comRosto;
+  document.getElementById('sidebarImc').textContent = imcMedio !== '—' ? `${imcMedio}` : '—';
+  document.getElementById('navBadgeAlunos').textContent = total;
+
+  // IMC chart
+  const cats = IMC_CATS.map(c=>c.nome);
+  const counts = IMC_CATS.map((_,i) => {
+    return alunos.filter(a=>{
+      const imc = calcImc(a.altura,a.peso);
+      if (!imc) return false;
+      const idx = IMC_CATS.findIndex(c=>imc<c.max);
+      return (idx===-1 ? IMC_CATS.length-1 : idx)===i;
+    }).length;
+  });
+
+  if (chartImcDist) chartImcDist.destroy();
+  chartImcDist = new Chart(document.getElementById('chartImc'),{
+    type:'doughnut',
+    data:{ labels:cats, datasets:[{ data:counts, backgroundColor:IMC_CATS.map(c=>c.cor), borderWidth:0, hoverOffset:6 }] },
+    options:{ responsive:true,maintainAspectRatio:false,cutout:'72%',
+      plugins:{ legend:{ position:'right', labels:{ color:'#8896AB', font:{size:11,family:'DM Sans'}, padding:12 } } } }
+  });
+
+  if (chartStatusDist) chartStatusDist.destroy();
+  const nAtivos = ativos;
+  const nInad = total - ativos;
+  chartStatusDist = new Chart(document.getElementById('chartStatus'),{
+    type:'doughnut',
+    data:{ labels:['Ativos','Inadimplentes'], datasets:[{
+      data:[nAtivos,nInad],
+      backgroundColor:['#C8FF57','#FF4D6D'],
+      borderWidth:0, hoverOffset:6
+    }]},
+    options:{ responsive:true,maintainAspectRatio:false,cutout:'72%',
+      plugins:{ legend:{ position:'right', labels:{ color:'#8896AB', font:{size:11,family:'DM Sans'}, padding:12 } } } }
+  });
+
+  // Recent
+  const recent = [...alunos].sort((a,b)=>(b.dataCadastro||0)-(a.dataCadastro||0)).slice(0,5);
+  const el = document.getElementById('recentStudents');
+  if (!recent.length) { el.innerHTML='<div class="empty-state"><p>Nenhum aluno cadastrado</p></div>'; return; }
+  el.innerHTML = `<table class="history-table">
+    <thead><tr><th>Aluno</th><th>IMC</th><th>Plano</th><th>Status</th></tr></thead>
+    <tbody>${recent.map(a=>{
+      const imc = calcImc(a.altura,a.peso);
+      const cat = classImc(imc);
+      return `<tr>
+        <td><span style="font-weight:600">${esc(a.nome)}</span><br><span style="font-size:.7rem;color:var(--text-3)">${a.idade} anos · ${a.altura}cm · ${a.peso}kg</span></td>
+        <td><span style="font-family:'Syne',sans-serif;font-weight:700">${imc||'—'}</span></td>
+        <td>${a.plano}</td>
+        <td><span class="student-badge ${a.status==='Ativo'?'badge-active':'badge-inactive'}">${a.status}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+// ────────── ALUNOS PAGE ──────────
+let filterState = {};
+let alunosPage = 1;
+const PER_PAGE = 9;
+
+function setFilter(key, val) {
+  document.querySelectorAll('#pageAlunos .filter-chip').forEach(c=>c.classList.remove('active'));
+  if (!val) { delete filterState[key]; document.querySelector('#pageAlunos .filter-chip').classList.add('active'); }
+  else { filterState[key] = val; event.target.classList.add('active'); }
+  alunosPage = 1;
+  renderAlunos();
+}
+
+function getFiltered() {
+  const q = (document.getElementById('globalSearch').value||'').toLowerCase();
+  return alunos.filter(a=>{
+    if (q && !a.nome.toLowerCase().includes(q)) return false;
+    if (filterState.plano && a.plano !== filterState.plano) return false;
+    if (filterState.status && a.status !== filterState.status) return false;
+    if (filterState.imc) {
+      const imc = calcImc(a.altura,a.peso);
+      const cat = classImc(imc).nome.toLowerCase();
+      if (filterState.imc === 'normal'    && !cat.includes('normal')) return false;
+      if (filterState.imc === 'sobrepeso' && !cat.includes('sobrepeso')) return false;
+      if (filterState.imc === 'obesidade' && !cat.includes('obesidade')) return false;
+    }
+    return true;
+  });
+}
+
+function renderAlunos() {
+  const filtered = getFiltered();
+  document.getElementById('alunoCount').textContent = `${filtered.length} cadastrado${filtered.length!==1?'s':''}`;
+
+  const total = Math.ceil(filtered.length / PER_PAGE);
+  const start = (alunosPage-1)*PER_PAGE;
+  const page  = filtered.slice(start, start+PER_PAGE);
+
+  const grid = document.getElementById('studentsGrid');
+  if (!page.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <h3>Nenhum aluno encontrado</h3><p>Tente ajustar os filtros</p></div>`;
+    document.getElementById('studentsPagination').innerHTML='';
+    return;
+  }
+
+  grid.innerHTML = page.map(a=>{
+    const imc = calcImc(a.altura,a.peso);
+    const cat = classImc(imc);
+    const col = avatarColor(a.nome);
+    const imcPct = imc ? Math.min(100,((imc-10)/30)*100) : 0;
+    return `<div class="student-card">
+      <div class="student-card-top">
+        <div class="avatar" style="background:${col}22;color:${col}">${initials(a.nome)}</div>
+        <div class="student-info">
+          <div class="student-name">${esc(a.nome)}</div>
+          <div class="student-meta">${a.idade} anos · ${a.plano}</div>
+        </div>
+        <span class="student-badge ${a.status==='Ativo'?'badge-active':'badge-inactive'}">${a.status}</span>
+      </div>
+      <div class="student-stats">
+        <div class="student-stat">
+          <div class="student-stat-value">${a.altura}</div>
+          <div class="student-stat-label">cm</div>
+        </div>
+        <div class="student-stat">
+          <div class="student-stat-value">${a.peso}</div>
+          <div class="student-stat-label">kg</div>
+        </div>
+        <div class="student-stat">
+          <div class="student-stat-value" style="color:${cat.cor}">${imc||'—'}</div>
+          <div class="student-stat-label">IMC</div>
+        </div>
+      </div>
+      <div class="iml-bar"><div class="iml-bar-fill" style="width:${imcPct}%;background:${cat.cor}"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span style="font-size:.7rem;color:${cat.cor};font-weight:600">${cat.nome}</span>
+        <span style="font-size:.7rem;color:var(--text-3)">${a.faceDescriptor?'🔵 Facial':'○ Sem facial'}</span>
+      </div>
+      <div class="student-actions">
+        <button class="btn btn-ghost btn-sm" onclick="abrirImc('${a.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          IMC
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="openEdit('${a.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-danger-ghost btn-sm" onclick="deleteAluno('${a.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Pagination
+  const pag = document.getElementById('studentsPagination');
+  if (total <= 1) { pag.innerHTML=''; return; }
+  pag.innerHTML = Array.from({length:total},(_,i)=>
+    `<button class="page-btn ${i+1===alunosPage?'active':''}" onclick="goPage(${i+1})">${i+1}</button>`
+  ).join('');
+}
+
+function goPage(p) { alunosPage=p; renderAlunos(); }
+
+function abrirImc(id) {
+  document.getElementById('selectImcAluno').value = id;
+  navigate('imc');
+  loadImcData();
+}
+
+// ────────── CADASTRO ──────────
+function previewImc() {
+  const h = parseFloat(document.getElementById('inAltura').value);
+  const w = parseFloat(document.getElementById('inPeso').value);
+  const imc = calcImc(h,w);
+  const el = document.getElementById('imcPreview');
+  if (imc) {
+    const cat = classImc(imc);
+    el.innerHTML = `IMC: <span style="font-weight:700;color:${cat.cor}">${imc} — ${cat.nome}</span>`;
+  } else {
+    el.textContent = 'Preencha altura e peso';
+    el.style.color = 'var(--text-3)';
+  }
+}
+
+function cadastrarAluno() {
+  const nome = document.getElementById('inNome').value.trim();
+  const idade = parseInt(document.getElementById('inIdade').value);
+  const altura = parseFloat(document.getElementById('inAltura').value);
+  const peso = parseFloat(document.getElementById('inPeso').value);
+  const plano = document.getElementById('inPlano').value;
+  const status = document.getElementById('inStatus').value;
+  const telefone = document.getElementById('inTelefone').value.trim();
+
+  if (!nome || !idade || !altura || !peso) { toast('Preencha todos os campos obrigatórios', 'error'); return; }
+  const imc = calcImc(altura,peso);
+  const a = {
+    id: genId(),
+    nome, idade, altura, peso, imc, plano, status, telefone,
+    dataCadastro: Date.now(),
+    faceDescriptor: null,
+    avaliacoes:[{ id:Date.now(), data:Date.now(), peso, obs:'Cadastro inicial' }]
+  };
+  alunos.push(a);
+  save();
+  limparCadastro();
+  toast(`${nome} cadastrado com sucesso!`);
+  refreshAll();
+}
+
+function limparCadastro() {
+  ['inNome','inIdade','inAltura','inPeso','inTelefone'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  document.getElementById('imcPreview').textContent = 'Preencha altura e peso';
+}
+
+// ────────── EDIT ──────────
+function openEdit(id) {
+  const a = alunos.find(x=>x.id===id);
+  document.getElementById('editId').value = id;
+  document.getElementById('editNome').value = a.nome;
+  document.getElementById('editIdade').value = a.idade;
+  document.getElementById('editTel').value = a.telefone||'';
+  document.getElementById('editAltura').value = a.altura;
+  document.getElementById('editPeso').value = a.peso;
+  document.getElementById('editPlano').value = a.plano;
+  document.getElementById('editStatus').value = a.status;
+  document.getElementById('modalEdit').classList.add('open');
+}
+
+function salvarEdicao() {
+  const id = document.getElementById('editId').value;
+  const a = alunos.find(x=>x.id===id);
+  if (!a) return;
+  a.nome    = document.getElementById('editNome').value.trim() || a.nome;
+  a.idade   = parseInt(document.getElementById('editIdade').value) || a.idade;
+  a.telefone= document.getElementById('editTel').value;
+  a.altura  = parseFloat(document.getElementById('editAltura').value) || a.altura;
+  a.peso    = parseFloat(document.getElementById('editPeso').value) || a.peso;
+  a.plano   = document.getElementById('editPlano').value;
+  a.status  = document.getElementById('editStatus').value;
+  a.imc     = calcImc(a.altura, a.peso);
+  save();
+  closeModal('modalEdit');
+  toast('Aluno atualizado!');
+  refreshAll();
+}
+
+function deleteAluno(id) {
+  const a = alunos.find(x=>x.id===id);
+  confirm2(`Excluir ${a.nome}? Esta ação não pode ser desfeita.`, ()=>{
+    alunos = alunos.filter(x=>x.id!==id);
+    save();
+    toast(`${a.nome} removido`, 'info');
+    refreshAll();
+  });
+}
+
+// ────────── IMC PAGE ──────────
+let imcChart = null;
+
+function refreshImcSelect() {
+  const sel = document.getElementById('selectImcAluno');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— escolha um aluno —</option>' +
+    alunos.map(a=>`<option value="${a.id}">${esc(a.nome)}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+function loadImcData() {
+  const id = document.getElementById('selectImcAluno').value;
+  document.getElementById('imcContent').style.display = id ? 'block' : 'none';
+  document.getElementById('imcEmpty').style.display   = id ? 'none'  : 'block';
+  if (!id) return;
+
+  const a = alunos.find(x=>x.id===id);
+  const imc = calcImc(a.altura, a.peso);
+  const cat = classImc(imc);
+  const idx = IMC_CATS.findIndex(c=>imc<c.max);
+
+  document.getElementById('imcBigVal').textContent = imc || '—';
+  document.getElementById('imcBigVal').style.color = cat.cor;
+  document.getElementById('imcBadge').innerHTML =
+    `<span class="imc-badge" style="background:${cat.cor}22;color:${cat.cor};border:1px solid ${cat.cor}44">${cat.nome}</span>`;
+
+  // Categories
+  document.getElementById('imcCategories').innerHTML = IMC_CATS.map((c,i)=>
+    `<div class="bmi-cat ${i===idx?'current':''}" style="background:${c.cor}${i===idx?'33':'11'};color:${c.cor}">
+      <div style="font-size:.55rem">${i===idx?'▲':''}</div>
+      ${c.nome.split(' ')[0]}
+    </div>`
+  ).join('');
+
+  document.getElementById('imcFormula').innerHTML =
+    `<b style="color:var(--text-1)">${esc(a.nome)}</b><br>
+    Peso: ${a.peso} kg · Altura: ${a.altura} cm<br>
+    IMC = ${a.peso} ÷ (${(a.altura/100).toFixed(2)})² = <b style="color:${cat.cor}">${imc}</b>`;
+
+  // History
+  const hist = [...(a.avaliacoes||[])].sort((a,b)=>a.data-b.data);
+  document.getElementById('historyBody').innerHTML = [...hist].reverse().map(h=>{
+    const himc = calcImc(a.altura, h.peso);
+    const hcat = classImc(himc);
+    return `<tr>
+      <td>${new Date(h.data).toLocaleDateString('pt-BR')}</td>
+      <td><b>${h.peso}</b> kg</td>
+      <td><b style="color:${hcat.cor}">${himc}</b></td>
+      <td><span style="font-size:.7rem;color:${hcat.cor}">${hcat.nome}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" style="color:var(--text-3);text-align:center;padding:16px">Sem avaliações</td></tr>';
+
+  // Chart
+  if (imcChart) imcChart.destroy();
+  imcChart = new Chart(document.getElementById('chartEvolucao'),{
+    type:'line',
+    data:{
+      labels: hist.map(h=>new Date(h.data).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})),
+      datasets:[{
+        label:'Peso (kg)',
+        data: hist.map(h=>h.peso),
+        borderColor:'#C8FF57',
+        backgroundColor:'rgba(200,255,87,0.07)',
+        tension:0.4, fill:true, pointRadius:4,
+        pointBackgroundColor:'#C8FF57', pointBorderWidth:0
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#8896AB', font:{size:10} } },
+        y:{ grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#8896AB', font:{size:10} } }
+      }
+    }
+  });
+
+  // Recommendations
+  const recs = getRecomendacoes(imc, a.idade, a.plano);
+  document.getElementById('imcRecomendacoes').innerHTML = recs.map(r=>
+    `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px;background:var(--surface-2);border-radius:10px;font-size:.8rem">
+      <span style="font-size:1.1rem;flex-shrink:0">${r.icon}</span>
+      <div><div style="font-weight:600;margin-bottom:2px">${r.title}</div><div style="color:var(--text-3)">${r.desc}</div></div>
+    </div>`
+  ).join('');
+
+  document.getElementById('avaliacaoAlunoId2') && (document.getElementById('avaliacaoAlunoId2').value = id);
+}
+
+function getRecomendacoes(imc, idade, plano) {
+  const recs = [];
+  if (imc < 18.5) {
+    recs.push({ icon:'🍽️', title:'Aumentar ingestão calórica', desc:'Foco em alimentos nutritivos e calóricos' });
+    recs.push({ icon:'🏋️', title:'Hipertrofia', desc:'Treino de força para ganho de massa muscular' });
+  } else if (imc < 25) {
+    recs.push({ icon:'🥗', title:'Manter dieta equilibrada', desc:'Continue com os bons hábitos alimentares' });
+    recs.push({ icon:'💪', title:'Treino variado', desc:'Cardio + musculação para manutenção' });
+  } else if (imc < 30) {
+    recs.push({ icon:'🔥', title:'Déficit calórico', desc:'Redução moderada de ~500 kcal/dia' });
+    recs.push({ icon:'🏃', title:'Cardio diário', desc:'30+ minutos de atividade aeróbica' });
+  } else {
+    recs.push({ icon:'⚠️', title:'Acompanhamento nutricional', desc:'Consulte um nutricionista com urgência' });
+    recs.push({ icon:'🚶', title:'Atividade leve', desc:'Caminhadas e exercícios de baixo impacto' });
+    recs.push({ icon:'💧', title:'Hidratação', desc:'2-3 litros de água por dia' });
+  }
+  if (idade > 50) {
+    recs.push({ icon:'🩺', title:'Avaliação médica', desc:'Consulte antes de iniciar treinos intensos' });
+  }
+  if (plano === 'Anual') {
+    recs.push({ icon:'🎯', title:'Check-up trimestral', desc:'Seu plano anual inclui avaliações periódicas' });
+  }
+  return recs;
+}
+
+function openAvaliacaoModal() {
+  const id = document.getElementById('selectImcAluno').value;
+  if (!id) { toast('Selecione um aluno', 'error'); return; }
+  document.getElementById('avalPeso').value = '';
+  document.getElementById('avalObs').value = '';
+  document.getElementById('modalAvaliacao').classList.add('open');
+}
+
+function salvarAvaliacao() {
+  const id = document.getElementById('selectImcAluno').value;
+  const peso = parseFloat(document.getElementById('avalPeso').value);
+  const obs = document.getElementById('avalObs').value;
+  if (!peso) { toast('Informe o peso', 'error'); return; }
+  const a = alunos.find(x=>x.id===id);
+  if (!a.avaliacoes) a.avaliacoes=[];
+  a.avaliacoes.push({ id:Date.now(), data:Date.now(), peso, obs });
+  a.peso = peso;
+  a.imc  = calcImc(a.altura, peso);
+  save();
+  closeModal('modalAvaliacao');
+  toast('Avaliação registrada!');
+  loadImcData();
+  refreshAll();
+}
+
+// ────────── FACIAL ──────────
+function renderFacialSelect() {
+  document.getElementById('facialSelect').innerHTML = alunos.map(a=>
+    `<div class="facial-chip ${selectedFacialId===a.id?'selected':''}" onclick="selectFacial('${a.id}')">
+      ${a.faceDescriptor?'🔵 ':''}${esc(a.nome)}
+    </div>`
+  ).join('');
+}
+
+function selectFacial(id) {
+  selectedFacialId = id;
+  renderFacialSelect();
+  toast(`${alunos.find(a=>a.id===id)?.nome} selecionado`, 'info');
+}
+
+async function loadFaceModels() {
+  if (modelsLoaded) { initCamera(); return; }
+  setFaceStatus('Carregando modelos de IA...', false);
+  try {
+    if (typeof faceapi === 'undefined') {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';
+      s.onload = async ()=>{
+        await loadModels();
+      };
+      document.head.appendChild(s);
+    } else {
+      await loadModels();
+    }
+  } catch(e) {
+    setFaceStatus('Erro ao carregar modelos', true);
+  }
+}
+
+async function loadModels() {
+  const base = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+  await faceapi.nets.ssdMobilenetv1.loadFromUri(base);
+  await faceapi.nets.faceLandmark68Net.loadFromUri(base);
+  await faceapi.nets.faceRecognitionNet.loadFromUri(base);
+  modelsLoaded = true;
+  setFaceStatus('Modelos prontos', false);
+  initCamera();
+}
+
+async function initCamera() {
+  const video = document.getElementById('videoEl');
+  if (!video || video.srcObject) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video:true });
+    video.srcObject = stream;
+    video.onplay = startDetection;
+    setFaceStatus('Câmera ativa', false);
+  } catch(e) {
+    setFaceStatus('Câmera indisponível', true);
+  }
+}
+
+function startDetection() {
+  if (faceInterval) clearInterval(faceInterval);
+  const video = document.getElementById('videoEl');
+  const canvas = document.getElementById('overlayEl');
+  faceapi.matchDimensions(canvas, { width:video.videoWidth, height:video.videoHeight });
+
+  faceInterval = setInterval(async ()=>{
+    if (!modelsLoaded || !video || video.paused) return;
+    const dets = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options())
+      .withFaceLandmarks().withFaceDescriptors();
+    const resized = faceapi.resizeResults(dets, { width:video.videoWidth, height:video.videoHeight });
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    faceapi.draw.drawDetections(canvas, resized);
+
+    if (dets.length > 0) {
+      currentFaceDescriptor = dets[0].descriptor;
+      setFaceStatus('Rosto detectado ✓', false, true);
+      document.getElementById('btnRegistrar').disabled = false;
+    } else {
+      currentFaceDescriptor = null;
+      setFaceStatus('Nenhum rosto detectado', false);
+      document.getElementById('btnRegistrar').disabled = true;
+    }
+  }, 400);
+}
+
+function setFaceStatus(msg, err, detected=false) {
+  document.getElementById('faceStatusText').textContent = msg;
+  const dot = document.getElementById('faceDot');
+  dot.className = 'face-dot' + (detected?' detected':err?' error':'');
+}
+
+function registrarRosto() {
+  if (!selectedFacialId) { toast('Selecione um aluno primeiro', 'error'); return; }
+  if (!currentFaceDescriptor) { toast('Nenhum rosto detectado', 'error'); return; }
+  const a = alunos.find(x=>x.id===selectedFacialId);
+  a.faceDescriptor = Array.from(currentFaceDescriptor);
+  save();
+  toast(`Rosto de ${a.nome} registrado!`);
+  renderFacialSelect();
+  refreshDashboard();
+}
+
+function buscarRosto() {
+  if (!currentFaceDescriptor) { toast('Nenhum rosto detectado', 'error'); return; }
+  const comRosto = alunos.filter(a=>a.faceDescriptor);
+  if (!comRosto.length) { toast('Nenhum aluno com rosto cadastrado', 'error'); return; }
+  let best = null, bestDist = 0.6;
+  for (const a of comRosto) {
+    const d = faceapi.euclideanDistance(currentFaceDescriptor, new Float32Array(a.faceDescriptor));
+    if (d < bestDist) { bestDist=d; best=a; }
+  }
+  if (best) toast(`Identificado: ${best.nome} (${((1-bestDist)*100).toFixed(0)}% de similaridade)`);
+  else toast('Nenhum correspondente encontrado', 'error');
+}
+
+// ────────── EXPORT ──────────
+function exportarDados() {
+  const blob = new Blob([JSON.stringify({versao:'5.0',exportado:new Date().toISOString(),alunos},null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `gympro_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Dados exportados!', 'info');
+}
+
+// ────────── SEARCH ──────────
+function onGlobalSearch() {
+  if (currentPage === 'alunos') renderAlunos();
+}
+
+// ────────── UTILS ──────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function refreshAll() {
+  if (currentPage==='dashboard') refreshDashboard();
+  if (currentPage==='alunos')    renderAlunos();
+  if (currentPage==='imc')       refreshImcSelect();
+  document.getElementById('navBadgeAlunos').textContent = alunos.length;
+  document.getElementById('sidebarImc').textContent = (() => {
+    const imcs = alunos.map(a=>calcImc(a.altura,a.peso)).filter(Boolean);
+    return imcs.length ? (imcs.reduce((s,v)=>s+v,0)/imcs.length).toFixed(1) : '—';
+  })();
+}
+
+// ────────── RESPONSIVE ──────────
+function checkMobile() {
+  const toggle = document.getElementById('menuToggle');
+  if (window.innerWidth<=900) toggle.style.display='flex';
+  else { toggle.style.display='none'; document.getElementById('sidebar').classList.remove('open'); }
+}
+
+window.addEventListener('resize', checkMobile);
+
+document.addEventListener('keydown', e=>{
+  if (e.key==='Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+    document.getElementById('sidebar').classList.remove('open');
+  }
+});
+
+// ────────── INIT ──────────
+load();
+checkMobile();
+refreshDashboard();
+</script>
+</body>
+</html>
